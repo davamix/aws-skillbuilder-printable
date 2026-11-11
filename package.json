@@ -1,0 +1,24 @@
+{
+  "name": "aws-skillbuilder-printable",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Turn AWS Skill Builder courses into printable Markdown and PDF (text only, no video).",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
+    "login": "node scripts/login.js",
+    "verify": "node scripts/verify.js",
+    "inspect": "node scripts/inspect.js",
+    "outline": "node scripts/outline.js",
+    "extract": "node scripts/extract-module.js",
+    "build": "node scripts/build.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "markdown-it": "^14.3.3",
+    "playwright": "^1.65.0"
+  }
+}

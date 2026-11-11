@@ -1,0 +1,22 @@
+#!/bin/sh
+# Safety net: refuse to commit the browser session, page dumps or course content,
+# even if someone force-adds them (git add -f).
+fail=0
+
+blocked=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^(\.auth/|debug/|build/|output/)' | grep -v '^output/README\.md$')
+if [ -n "$blocked" ]; then
+  echo "pre-commit: refusing to commit private files:" >&2
+  echo "$blocked" | sed 's/^/  /' >&2
+  fail=1
+fi
+
+# Playwright storageState / cookie dumps start with a "cookies" array of objects.
+for f in $(git diff --cached --name-only --diff-filter=ACMR); do
+  [ -f "$f" ] || continue
+  if git show ":$f" 2>/dev/null | grep -qE '"cookies"[[:space:]]*:[[:space:]]*\[[[:space:]]*\{'; then
+    echo "pre-commit: $f looks like a saved browser session (cookies). Not committing it." >&2
+    fail=1
+  fi
+done
+
+[ $fail -eq 0 ] || { echo "Unstage with: git restore --staged <file>" >&2; exit 1; }

@@ -1,0 +1,32 @@
+# ─── Secrets (NEVER commit) ────────────────────────────────────────────────
+# .auth/ holds the Skill Builder browser session (cookies + localStorage)
+# created by `npm run login`. Anyone with this file is logged in as you.
+.auth/
+*.storage-state.json
+storage-state*.json
+.env
+.env.*
+
+# ─── Course content (personal, copyrighted by AWS) ─────────────────────────
+# Extracted text and the generated Markdown/PDF stay on your machine.
+output/*
+!output/README.md
+build/
+
+# Raw page dumps used while analysing the site (may contain your name/email)
+debug/
+
+# ─── Dependencies / tooling ────────────────────────────────────────────────
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
