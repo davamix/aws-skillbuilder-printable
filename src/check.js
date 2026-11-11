@@ -2,12 +2,13 @@
 // transcripts removed) must appear somewhere in the generated Markdown.
 // Catches content dropped by the converter, e.g. a new component type.
 
-const { NAV_PATTERNS } = require('./convert');
+const { NAV_PATTERNS, JUNK_ALT } = require('./convert');
 
 // Player chrome / widget labels that are not course content, plus the
-// navigation instructions the converter drops on purpose.
+// navigation instructions and marker alt texts the converter drops on purpose.
 const IGNORE = [
   ...NAV_PATTERNS,
+  JUNK_ALT,
   /^select this button or press alt/i,
   /^transcript$/i,
   /^submit$/i,

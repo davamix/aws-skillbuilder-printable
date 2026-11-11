@@ -48,8 +48,9 @@ single course file the `--course <slug>` option can be omitted.
   knowledge-check answers.
 - **Conversion** ([`src/convert.js`](src/convert.js)) — text blocks, flip cards
   (back side: title + description), hotspot images (marker titles + text),
-  carousels, columns, tables and questions become Markdown. Videos,
-  transcripts and images are dropped. Each module ends with an **answer key**
+  carousels, tabs, accordions, columns, tables and questions become Markdown.
+  Videos, transcripts and images are dropped; an image's descriptive alt text
+  is kept as one italic `[Image: …]` line. Each module ends with an **answer key**
   (correct option + explanations). Unknown block types are rendered with a
   generic fallback and reported.
 - **Coverage check** ([`src/check.js`](src/check.js)) — the extractor also

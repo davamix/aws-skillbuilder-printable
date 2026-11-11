@@ -31,10 +31,11 @@
 |---|---|---|
 | `SafeHTMLSpan`, `SafeHTML` | `content` (HTML) | Markdown via turndown; h3→level below lesson, tables → GFM |
 | `Video` | `media` (mp4 + vtt captions) | skipped |
-| `Image` | `name`, `alt` | skipped |
-| `ImageWithHotSpots` | `image{alt}`, `hotspots[{marker,title,text}]` | image alt as a line, then **title** + text per hotspot |
+| `Image` | `name`, `alt` | image dropped; descriptive alt kept as `*[Image: alt]*` (junk alts like "End of tab" → `JUNK_ALT`) |
+| `ImageWithHotSpots` | `image{alt}`, `hotspots[{marker,title,text}]` | `*[Image: alt]*`, then **title** + text per hotspot |
+| `TabSet`, `Accordion` | `sections[{title, blocks[]}]` | **title**, then the section's blocks (recursive) — added for Module 2 |
 | `FlippyCards` | `cards[{title (front: img/name), text (back: bold name + description)}]` | back side; front alt as title if the back has no bold title |
-| `Carousel` | `slides[{title, text, image}]` | **title** + text, or a numbered list when all titles are empty |
+| `Carousel` | `slides[{title, text, image}]` | **title** + text (+ image alt), or a numbered list when all titles are empty |
 | `Columns` | `cols[[blocks]]` | each column's blocks in order |
 | `Question` | `question` (HTML), `answers[{answer, correct, feedback}]`, `rightFeedback`, `wrongFeedback`, `block_title` | "**Question n**", text, *Choose k.*, `- A. …`; answer key at module end |
 

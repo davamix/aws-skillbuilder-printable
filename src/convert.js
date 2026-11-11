@@ -6,7 +6,10 @@
 const TurndownService = require('turndown');
 const { strikethrough } = require('turndown-plugin-gfm');
 
-const SKIPPED = new Set(['Video', 'Image', 'Audio']); // printable = text only
+const SKIPPED = new Set(['Video', 'Audio']); // printable = text only (images: alt text only, see imageAlt)
+
+// Alt texts that are screen-reader markers, not descriptions (also ignored by the coverage check).
+const JUNK_ALT = /^(end of tab|end of section|decorative( image)?|image|spacer)\.?$/i;
 
 // Player navigation instructions and end-of-module filler that mean nothing on
 // paper. Paragraphs matching these are dropped (and ignored by the coverage
@@ -146,13 +149,28 @@ function convertModule(course, { level = 1 } = {}) {
   const warnings = [];
   const stats = {};
 
+  // The image itself is dropped; a descriptive alt text is kept as one italic line.
+  const imageAlt = (img) => {
+    const alt = clean(img?.alt);
+    return alt && !JUNK_ALT.test(alt) ? `*[Image: ${alt.replace(/\*/g, '')}]*` : '';
+  };
+
+  // Tabs / accordions: bold title, then the section's own blocks.
+  const titledSections = (b) => (b.sections || []).map((s) => [
+    clean(s.title) && `**${clean(s.title)}**`,
+    ...(s.blocks || []).map(renderBlock),
+  ].filter(Boolean).join('\n\n')).join('\n\n');
+
   const RENDERERS = {
     SafeHTMLSpan: (b) => html(b.content),
     SafeHTML: (b) => html(b.content),
+    Image: imageAlt,
+    TabSet: titledSections,
+    Accordion: titledSections,
 
     ImageWithHotSpots: (b) => {
       const parts = [];
-      if (clean(b.image?.alt)) parts.push(clean(b.image.alt));
+      parts.push(imageAlt(b.image));
       for (const h of b.hotspots || []) {
         if (clean(h.title)) parts.push(`**${clean(h.title)}**`);
         parts.push(html(h.text));
@@ -169,11 +187,12 @@ function convertModule(course, { level = 1 } = {}) {
     }).join('\n\n'),
 
     Carousel: (b) => {
-      const slides = (b.slides || []).filter((s) => clean(s.title) || clean(s.text));
+      const slides = (b.slides || []).filter((s) => clean(s.title) || clean(s.text) || imageAlt(s.image));
+      const body = (s) => [html(s.text), imageAlt(s.image)].filter(Boolean).join('\n\n');
       if (slides.some((s) => clean(s.title))) {
-        return slides.map((s) => [clean(s.title) && `**${clean(s.title)}**`, html(s.text)].filter(Boolean).join('\n\n')).join('\n\n');
+        return slides.map((s) => [clean(s.title) && `**${clean(s.title)}**`, body(s)].filter(Boolean).join('\n\n')).join('\n\n');
       }
-      return slides.map((s, i) => `${i + 1}. ${indent(html(s.text), 3)}`).join('\n\n');
+      return slides.map((s, i) => `${i + 1}. ${indent(body(s), 3)}`).join('\n\n');
     },
 
     Columns: (b) => (b.cols || []).flat().map(renderBlock).filter(Boolean).join('\n\n'),
@@ -258,4 +277,4 @@ function convertModule(course, { level = 1 } = {}) {
   return { markdown: tidyMd(out.join('\n\n')) + '\n', warnings, stats };
 }
 
-module.exports = { convertModule, NAV_PATTERNS };
+module.exports = { convertModule, NAV_PATTERNS, JUNK_ALT };
