@@ -22,11 +22,19 @@ npx playwright install chromium   # used to render the PDF
 
 ```sh
 npm run login            # 1. sign in by hand in the browser window, then click "Save session"
-npm run verify           # 2. check the saved session still works
-npm run outline          # 3. list the course modules and their status (-- --verbose for lessons)
-npm run extract -- 1     # 4. extract module 1  (also: -- 2,4  |  -- 2-5  |  -- all)
-npm run build            # 5. write the Markdown + PDF from every extracted module
+npm run outline          # 2. list the course modules and their status (-- --verbose for lessons)
+npm run module -- 1      # 3. extract module 1 + build + check  (also: -- 2,4  |  -- 2-5  |  -- all)
 ```
+
+`npm run module` = `npm run extract -- <modules>` followed by `npm run build`
+(both can be run separately; `build` works offline from the extracted files).
+Exit codes: `0` OK · `2` built, issues listed with `!` · `3` session expired
+(run `npm run login`) · `4` some modules are *Not started* — extracting them
+marks them as started in your progress, so it needs `--allow-start` · `1` error.
+
+Other helpers: `npm run verify` (session check), `npm run probe -- <N> --find
+"text" | --type <Type> | --types` (inspect an extracted module's JSON),
+`npm run inspect` (open a page with the session and dump it to `debug/`).
 
 Output (one file per format, modules in course order):
 
@@ -53,19 +61,22 @@ single course file the `--course <slug>` option can be omitted.
   is kept as one italic `[Image: …]` line. Each module ends with an **answer key**
   (correct option + explanations). Unknown block types are rendered with a
   generic fallback and reported.
-- **Coverage check** ([`src/check.js`](src/check.js)) — the extractor also
-  saves the player's *reader mode* text (videos/transcripts removed);
-  `npm run build` verifies every line of it appears in the Markdown and lists
-  anything missing.
+- **Checks** ([`src/check.js`](src/check.js), [`src/pdfcheck.js`](src/pdfcheck.js)) —
+  the extractor also saves the player's *reader mode* text (videos/transcripts
+  removed); `npm run build` verifies every line of it appears in the Markdown,
+  lints the Markdown (leftover HTML, entities), checks every question has an
+  answer and explanation, and reads the PDF back to report page count, module
+  start pages and question labels stranded at a page bottom. Full report:
+  `build/<course>/report.txt`.
 - **PDF** ([`src/pdf.js`](src/pdf.js)) — black-on-white print CSS, A4, page
   numbers, PDF bookmarks, each module, each module section and each answer key
   on a new page, link URLs printed next to the link text.
 - Player navigation instructions ("Choose the Return to outline link…") are
   dropped (`NAV_PATTERNS` in `src/convert.js`).
 
-Note: opening a module you have not started yet (the button says *Start*)
-registers it as started in your Skill Builder progress, exactly as clicking it
-yourself would.
+Note: opening a module you have not started yet registers it as started in
+your Skill Builder progress, exactly as clicking it yourself would — which is
+why such modules need `--allow-start`.
 
 Intermediate files live in `build/<course>/` (git-ignored): `outline.json`
 and per module `NN.course.json`, `NN.reader.txt`, `NN.meta.json`, `NN.md`.

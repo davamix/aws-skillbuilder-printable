@@ -59,11 +59,13 @@ Known quirks (already handled):
 
 ## Fixing gaps
 
-1. Look at the block in the saved JSON (no browser needed):
+1. Look at the saved JSON with `probe` (offline, no ad-hoc code needed):
    ```sh
-   node -e "const j=require('./build/<course>/modules/NN.course.json');JSON.stringify(j,(k,v)=>{if(v&&v.type==='<Type>')console.log(JSON.stringify(v,null,1).slice(0,3000));return v})"
+   npm run -s probe -- <N> --find "<distinctive phrase of a missing line>"   # JSON path + block type holding it
+   npm run -s probe -- <N> --type <Type> [--max 3000] [--all]               # sample of an unknown block type
+   npm run -s probe -- <N> --types                                          # block type counts (incl. nested)
    ```
-   For a `! missing:` line, search the JSON for a distinctive phrase of it to find which block/field holds it.
+   The full build report (all `!` lines, block stats, section start pages) is in `build/<course>/report.txt`.
 2. Add or adjust a renderer in `RENDERERS` (`src/convert.js`). Keep output plain: text, lists, tables, links, bold titles.
    No images, no colours.
 3. If the missing line is player chrome rather than content (a button label, widget caption), add a regex to
@@ -74,12 +76,17 @@ If the site itself changed (selectors fail, no course.json): `npm run inspect --
 saved session; a steps file exports `async ({ page, context, dump }) => {}` and `dump(name)` writes
 `debug/<name>.html|.txt|.png` (scripts stripped; `debug/` is git-ignored). Put throwaway steps files in the scratchpad.
 
-## Checking the PDF visually
+## Automatic checks (`npm run build`)
 
-The Read tool cannot render PDFs here (no poppler). Optional: create a venv **in the scratchpad**, `pip install pymupdf`,
-then render pages with `fitz.open(pdf)[i].get_pixmap(dpi=80).save('pageNN.png')` and Read the PNGs.
-Things to look for: a question label stranded at a page bottom (questions are wrapped in `.keep` in `src/pdf.js`),
-broken tables, leftover HTML.
+- Coverage (`src/check.js → coverage`): every reader-mode line (minus `IGNORE`, `NAV_PATTERNS`, `JUNK_ALT`) is in the Markdown.
+- Lint (`src/check.js → lint`): leftover HTML tags (except `<br>` in table cells), `****`, HTML entities, empty headings.
+- Converter warnings (`src/convert.js`): unknown block types, questions without a correct answer or explanation.
+- PDF (`src/pdfcheck.js`, via `unpdf`): page count, module/section start pages from the bookmarks
+  (`--verbose` prints sections), question labels stranded at a page bottom.
+
+Visual check is not needed routinely. If a layout problem is suspected: the Read tool cannot render PDFs here
+(no poppler) — create a venv in the scratchpad, `pip install pymupdf`, render with
+`pymupdf.open(pdf)[i].get_pixmap(dpi=80).save('pageNN.png')` and Read the PNGs.
 
 ## Adding another course
 

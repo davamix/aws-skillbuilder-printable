@@ -3,8 +3,9 @@
 //   NN.reader.txt   – reader-mode text without videos/transcripts (for the coverage check)
 //   NN.meta.json    – label, content id/version, extraction time
 //
-// Usage: npm run extract -- <modules> [--course <slug>] [--no-reader]
+// Usage: npm run extract -- <modules> [--course <slug>] [--no-reader] [--allow-start]
 //   <modules>: 1 | 1,3 | 2-5 | all
+// Exit codes: 3 = session expired (npm run login), 4 = "Not started" modules need --allow-start.
 const fs = require('fs');
 const path = require('path');
 const { loadCourse, launch, sessionContext, saveSession, courseBuildDir, ensureDir } = require('../src/lib');
@@ -26,6 +27,15 @@ const { parseArgs, parseModuleList } = require('../src/args');
     const max = Math.max(...outline.map((m) => m.number || 0));
     const wanted = parseModuleList(args._, max);
 
+    // Opening a "Not started" module changes the user's progress: require explicit consent.
+    const notStarted = wanted.filter((n) => /not started/i.test(outline.find((m) => m.number === n)?.status || ''));
+    if (notStarted.length && !args['allow-start']) {
+      console.log(`NEEDS_CONSENT: module(s) ${notStarted.join(', ')} are "Not started" — extracting them marks them as `
+        + 'started in your Skill Builder progress. Re-run with --allow-start to proceed.');
+      process.exitCode = 4;
+      return;
+    }
+
     for (const n of wanted) {
       const nn = String(n).padStart(2, '0');
       process.stdout.write(`Module ${n}: `);
@@ -46,7 +56,7 @@ const { parseArgs, parseModuleList } = require('../src/args');
       console.log(' ✓');
     }
     await saveSession(context, page);
-    console.log(`\nSaved to ${path.relative(process.cwd(), outDir)}. Next: npm run build`);
+    console.log(`\nSaved to ${path.relative(process.cwd(), outDir)}.`);
   } finally {
     await browser.close();
   }

@@ -12,7 +12,9 @@
     "inspect": "node scripts/inspect.js",
     "outline": "node scripts/outline.js",
     "extract": "node scripts/extract-module.js",
-    "build": "node scripts/build.js"
+    "build": "node scripts/build.js",
+    "module": "node scripts/module.js",
+    "probe": "node scripts/probe.js"
   },
   "engines": {
     "node": ">=18"
@@ -21,6 +23,7 @@
     "markdown-it": "^14.3.3",
     "playwright": "^1.65.0",
     "turndown": "^7.2.5",
-    "turndown-plugin-gfm": "^1.0.2"
+    "turndown-plugin-gfm": "^1.0.2",
+    "unpdf": "^2.1.0"
   }
 }

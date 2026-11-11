@@ -256,6 +256,7 @@ function convertModule(course, { level = 1 } = {}) {
   if (answers.length) {
     out.push(`${H(level + 1)} Answer key`);
     for (const { n, b, correct } of answers) {
+      if (!correct.length) warnings.push(`Question ${n} has no correct answer marked`);
       const lines = [`**Question ${n} — ${correct.join(', ') || '?'}**`];
       const notes = (b.answers || []).map((a, i) => {
         const fb = unglue(clean(/</.test(a.feedback || '') ? html(a.feedback) : a.feedback));
@@ -269,6 +270,7 @@ function convertModule(course, { level = 1 } = {}) {
         // Multi-select questions carry one explanation for the whole question.
         const fb = meaningfulFeedback(/</.test(b.rightFeedback || '') ? html(b.rightFeedback) : b.rightFeedback);
         if (fb) lines.push(`- ${unglue(fb)}`);
+        else warnings.push(`Question ${n} has no explanation in the answer key`);
       }
       out.push(lines.join('\n\n'));
     }

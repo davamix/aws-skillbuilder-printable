@@ -1,41 +1,58 @@
 // Builds the printable course from the extracted modules (offline, no browser session needed):
 //   output/<Course name>/Markdown/<Course name>.md
 //   output/<Course name>/PDF/<Course name>.pdf
-// Also runs the coverage check for each module against its reader-mode text.
+// and checks the result: coverage against reader-mode text, Markdown lint,
+// answer key completeness, PDF layout. Prints one line per healthy module and
+// details only for problems ("!" lines). Full report: build/<course>/report.txt.
 //
-// Usage: npm run build [-- --course <slug>] [--no-pdf]
+// Usage: npm run build [-- --course <slug>] [--no-pdf] [--verbose]
+// Exit code: 0 = OK, 2 = built but issues to review, 1 = error.
 const fs = require('fs');
 const path = require('path');
 const { loadCourse, courseBuildDir, ensureDir, safeName, OUTPUT_DIR } = require('../src/lib');
 const { convertModule } = require('../src/convert');
-const { coverage } = require('../src/check');
+const { coverage, lint } = require('../src/check');
 const { slugify, writePdf } = require('../src/pdf');
+const { checkPdf } = require('../src/pdfcheck');
 const { parseArgs } = require('../src/args');
+
+const MAX_LINES_PER_MODULE = 12; // console cap; report.txt has everything
 
 (async () => {
   const args = parseArgs(process.argv.slice(2));
   const course = loadCourse(args.course);
-  const modDir = path.join(courseBuildDir(course), 'modules');
+  const buildDir = courseBuildDir(course);
+  const modDir = path.join(buildDir, 'modules');
   const files = fs.existsSync(modDir) ? fs.readdirSync(modDir).filter((f) => /^\d+\.course\.json$/.test(f)).sort() : [];
-  if (!files.length) throw new Error('No extracted modules. Run `npm run extract -- <module>` first.');
+  if (!files.length) throw new Error('No extracted modules. Run `npm run module -- <N>` first.');
 
+  const report = [];
+  const out = (line, { console: show = true } = {}) => { report.push(line); if (show) console.log(line); };
+  let issues = 0;
   const modules = [];
-  let problems = 0;
+
   for (const f of files) {
     const nn = f.slice(0, 2);
     const json = JSON.parse(fs.readFileSync(path.join(modDir, f), 'utf8'));
     const { markdown, warnings, stats } = convertModule(json, { level: 2 });
     fs.writeFileSync(path.join(modDir, `${nn}.md`), markdown);
 
+    const problems = [];
+    const counts = {};
+    for (const w of warnings) counts[w] = (counts[w] || 0) + 1;
+    for (const [w, c] of Object.entries(counts)) problems.push(`${w}${c > 1 ? ` (×${c})` : ''}`);
+    for (const l of lint(markdown)) problems.push(l);
     const readerFile = path.join(modDir, `${nn}.reader.txt`);
     const cov = fs.existsSync(readerFile) ? coverage(fs.readFileSync(readerFile, 'utf8'), markdown) : null;
-    const skipped = ['Video', 'Image'].map((t) => stats[t] && `${stats[t]} ${t.toLowerCase()}${stats[t] > 1 ? 's' : ''}`).filter(Boolean).join(', ');
-    console.log(`${json.title}: ${Object.entries(stats).map(([k, v]) => `${k}×${v}`).join(' ')}${skipped ? ` (skipped ${skipped})` : ''}`);
-    for (const w of warnings) { console.log(`  ! ${w}`); problems++; }
-    if (cov) {
-      console.log(`  coverage: ${cov.checked - cov.missing.length}/${cov.checked} reader-mode lines found`);
-      for (const m of cov.missing) { console.log(`  ! missing: ${m.slice(0, 140)}`); problems++; }
-    } else console.log('  coverage: no reader text (extracted with --no-reader)');
+    if (cov) for (const m of cov.missing) problems.push(`missing: ${m.slice(0, 140)}`);
+
+    const covText = cov ? `coverage ${cov.checked - cov.missing.length}/${cov.checked}` : 'coverage n/a (no reader text)';
+    out(`${problems.length ? '✗' : '✓'} ${json.title} — ${covText}, ${stats.Question || 0} questions`);
+    const statLine = `    blocks: ${Object.entries(stats).map(([k, v]) => `${k}×${v}`).join(' ')}`;
+    out(statLine, { console: !!args.verbose });
+    problems.forEach((p, i) => out(`    ! ${p}`, { console: i < MAX_LINES_PER_MODULE }));
+    if (problems.length > MAX_LINES_PER_MODULE) console.log(`    … ${problems.length - MAX_LINES_PER_MODULE} more in build/${course.slug}/report.txt`);
+    issues += problems.length;
     modules.push({ json, markdown });
   }
 
@@ -56,12 +73,21 @@ const { parseArgs } = require('../src/args');
 
   const mdPath = path.join(ensureDir(path.join(OUTPUT_DIR, name, 'Markdown')), `${name}.md`);
   fs.writeFileSync(mdPath, doc);
-  console.log(`\nMarkdown: ${path.relative(process.cwd(), mdPath)}`);
+  out(`Markdown: ${path.relative(process.cwd(), mdPath)}`);
 
   if (!args['no-pdf']) {
     const pdfPath = path.join(ensureDir(path.join(OUTPUT_DIR, name, 'PDF')), `${name}.pdf`);
     await writePdf(doc, course.name, pdfPath);
-    console.log(`PDF:      ${path.relative(process.cwd(), pdfPath)}`);
+    const pdf = await checkPdf(fs.readFileSync(pdfPath), { footerText: course.name });
+    const starts = pdf.modules.map((m) => `M${(m.title.match(/\d+/) || ['?'])[0]} p${m.page}`).join(', ');
+    out(`PDF:      ${path.relative(process.cwd(), pdfPath)} — ${pdf.pages} pages (${starts})`);
+    for (const m of pdf.modules) {
+      out(`    ${m.title}: ${m.sections.map((s) => `${s.title} p${s.page}`).join(' · ')}`, { console: !!args.verbose });
+    }
+    for (const s of pdf.stranded) { out(`    ! "${s.label}" stranded at the bottom of page ${s.page}`); issues++; }
   }
-  if (problems) console.log(`\n${problems} issue(s) to review above.`);
+
+  out(issues ? `RESULT: ${issues} issue(s) — see "!" lines` : 'RESULT: OK');
+  fs.writeFileSync(path.join(buildDir, 'report.txt'), `${report.join('\n')}\n`);
+  process.exit(issues ? 2 : 0);
 })().catch((err) => { console.error(err.message); process.exit(1); });

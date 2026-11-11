@@ -31,4 +31,15 @@ function coverage(readerText, markdown) {
   return { checked: checked.length, missing };
 }
 
-module.exports = { coverage };
+/** Leftovers the converter should never produce. */
+function lint(markdown) {
+  const issues = [];
+  const tags = markdown.match(/<(?!br>)\/?[a-z][a-z0-9]*[^>]*>/gi);
+  if (tags) issues.push(`leftover HTML: ${[...new Set(tags)].slice(0, 5).join(' ')}`);
+  if (/\*{4,}/.test(markdown)) issues.push('nested bold (****)');
+  if (/&(nbsp|amp|lt|gt|quot|#\d+);/.test(markdown)) issues.push('HTML entities left in text');
+  if (/^#{1,6}\s*$/m.test(markdown)) issues.push('empty heading');
+  return issues;
+}
+
+module.exports = { coverage, lint };
