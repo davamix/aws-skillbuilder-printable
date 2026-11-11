@@ -8,6 +8,14 @@ const { strikethrough } = require('turndown-plugin-gfm');
 
 const SKIPPED = new Set(['Video', 'Image', 'Audio']); // printable = text only
 
+// Player navigation instructions that mean nothing on paper. Paragraphs matching
+// these are dropped (and ignored by the coverage check in src/check.js).
+const NAV_PATTERNS = [
+  /\breturn to outline\b/i, // "Choose the Return to outline link at the top of this page to continue…"
+];
+const isNavigation = (text) => NAV_PATTERNS.some((re) => re.test(text.replace(/[*_]/g, '')));
+const dropNavigation = (md) => md.split(/\n{2,}/).filter((p) => !isNavigation(p)).join('\n\n');
+
 function hasAncestor(node, re) {
   for (let p = node.parentNode; p; p = p.parentNode) if (re.test(p.nodeName)) return true;
   return false;
@@ -185,9 +193,9 @@ function convertModule(course, { level = 1 } = {}) {
     stats[block.type] = (stats[block.type] || 0) + 1;
     if (SKIPPED.has(block.type)) return '';
     const r = RENDERERS[block.type];
-    if (r) return r(block);
+    if (r) return dropNavigation(r(block));
     warnings.push(`Unknown block type "${block.type}" (keys: ${Object.keys(block).join(', ')}) — rendered with generic fallback`);
-    return fallback(block);
+    return dropNavigation(fallback(block));
   }
 
   // Unknown component: render every text-ish string field in document order.
@@ -248,4 +256,4 @@ function convertModule(course, { level = 1 } = {}) {
   return { markdown: tidyMd(out.join('\n\n')) + '\n', warnings, stats };
 }
 
-module.exports = { convertModule };
+module.exports = { convertModule, NAV_PATTERNS };

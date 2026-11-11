@@ -57,8 +57,10 @@ single course file the `--course <slug>` option can be omitted.
   `npm run build` verifies every line of it appears in the Markdown and lists
   anything missing.
 - **PDF** ([`src/pdf.js`](src/pdf.js)) — black-on-white print CSS, A4, page
-  numbers, PDF bookmarks, each module on a new page, link URLs printed next to
-  the link text.
+  numbers, PDF bookmarks, each module, each module section and each answer key
+  on a new page, link URLs printed next to the link text.
+- Player navigation instructions ("Choose the Return to outline link…") are
+  dropped (`NAV_PATTERNS` in `src/convert.js`).
 
 Note: opening a module you have not started yet (the button says *Start*)
 registers it as started in your Skill Builder progress, exactly as clicking it

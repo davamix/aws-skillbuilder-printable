@@ -45,6 +45,15 @@ Known quirks (already handled):
   ("That's correct! Paragraph text = 17pt…") → ignored. Multi-select: per-option feedback empty, explanation in `rightFeedback`.
 - Paragraphs glued together in source ("launch.Which") → `unglue()` for questions/feedback.
 - Carousel slide titles can be empty (the benefit names only exist in the video) → numbered list.
+- Player navigation text ("Choose the **Return to outline** link…") → paragraph dropped via `NAV_PATTERNS` in
+  `src/convert.js`; the coverage check ignores the same patterns. Add new navigation phrases there (user's choice:
+  drop navigation text, keep everything else — e.g. "Congratulations on completing this module!" stays).
+
+## Layout decisions (user-approved)
+
+- Combined document levels: course `#`, module `##`, section `###`, lesson `####`, topic/content headings below.
+- PDF: every module (`h2.module`) and every section (`h3`, incl. "Answer key") starts on a new page; the first section
+  follows the module title on the same page (`src/pdf.js` CSS). Questions and answer-key entries never split across pages.
 
 ## Fixing gaps
 

@@ -37,6 +37,10 @@ h4 { font-size: 12pt; }
 h5 { font-size: 11pt; }
 h6 { font-size: 10.5pt; font-style: italic; }
 h2.module { break-before: page; page-break-before: always; }
+/* Every section (h3) and the answer key start on a new page — except the first
+   section, which follows the module title on the module's first page. */
+h3 { break-before: page; page-break-before: always; }
+h2.module + h3 { break-before: auto; page-break-before: auto; }
 p { margin: .45em 0; orphans: 3; widows: 3; }
 ul, ol { margin: .35em 0 .6em; padding-left: 1.4em; }
 li { margin: .15em 0; break-inside: avoid; }
