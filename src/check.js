@@ -2,7 +2,10 @@
 // transcripts removed) must appear somewhere in the generated Markdown.
 // Catches content dropped by the converter, e.g. a new component type.
 
+const MarkdownIt = require('markdown-it');
 const { NAV_PATTERNS, JUNK_ALT } = require('./convert');
+
+const md = new MarkdownIt({ html: true });
 
 // Player chrome / widget labels that are not course content, plus the
 // navigation instructions and marker alt texts the converter drops on purpose.
@@ -37,6 +40,10 @@ function lint(markdown) {
   const tags = markdown.match(/<(?!br>)\/?[a-z][a-z0-9]*[^>]*>/gi);
   if (tags) issues.push(`leftover HTML: ${[...new Set(tags)].slice(0, 5).join(' ')}`);
   if (/\*{4,}/.test(markdown)) issues.push('nested bold (****)');
+  // Emphasis that markdown-it fails to parse shows up as literal "**" / "*." in the rendered text.
+  const rendered = md.render(markdown).replace(/<[^>]+>/g, '');
+  const stray = rendered.split('\n').filter((l) => /\*{2,}|(^|\s)\*[.,;:]/.test(l));
+  for (const l of stray.slice(0, 3)) issues.push(`unrendered emphasis: ${l.trim().slice(0, 120)}`);
   if (/&(nbsp|amp|lt|gt|quot|#\d+);/.test(markdown)) issues.push('HTML entities left in text');
   if (/^#{1,6}\s*$/m.test(markdown)) issues.push('empty heading');
   return issues;

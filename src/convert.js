@@ -114,6 +114,15 @@ function tidyHtml(html) {
     .replace(/<\/?(html|body)[^>]*>/gi, '')
     .replace(/<colgroup[\s\S]*?<\/colgroup>/gi, '')
     .replace(/\s(style|class|dir|target|rel|width|height|caption|assetid|isdecorative|data-[\w-]+)="[^"]*"/gi, '')
+    // One italic sentence is often split into adjacent runs (<i>With </i><i><b>GraphQL</b></i><i>, a…</i>),
+    // which would give colliding delimiters (****). Normalise i/b to em/strong and merge adjacent runs.
+    .replace(/<(\/?)i(?=[\s>])[^>]*>/gi, '<$1em>')
+    .replace(/<(\/?)b(?=[\s>])[^>]*>/gi, '<$1strong>')
+    .replace(/<\/(em|strong)>(\s*)<\1>/gi, '$2')
+    .replace(/<\/(em|strong)>(\s*)<\1>/gi, '$2')
+    // Bold/italic around punctuation only (<strong>.</strong>) means nothing and breaks delimiters.
+    .replace(/<(em|strong)>([\s.,;:!?'"()‘-”-]*)<\/\1>/gi, '$2')
+    .replace(/<(em|strong)>([\s.,;:!?'"()‘-”-]*)<\/\1>/gi, '$2')
     .replace(/<p[^>]*>\s*(<br\s*\/?>\s*)*<\/p>/gi, '')
     .replace(/(<p[^>]*>)\s*(<br\s*\/?>\s*)+/gi, '$1');
 }

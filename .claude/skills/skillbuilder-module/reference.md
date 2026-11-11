@@ -41,6 +41,9 @@
 
 Known quirks (already handled):
 - `<b><strong>` / `<i><em>` double wrapping → nested rules avoid `****x****`.
+- One italic sentence split into adjacent runs (`<i>With </i><i><b>GraphQL</b></i><i>, …</i>`) and bold around
+  punctuation only (`<b>.</b>`) → `tidyHtml` merges adjacent em/strong runs and unwraps punctuation-only ones
+  (Modules 9, 13). Lint renders the Markdown and flags leftover literal `**` / `*.` ("unrendered emphasis").
 - Tables start with `<colgroup>` and carry inline colours → stripped; custom table rule.
 - Single-answer questions: per-option `feedback`; `rightFeedback` is an authoring placeholder
   ("That's correct! Paragraph text = 17pt…") → ignored. Multi-select: per-option feedback empty, explanation in `rightFeedback`.
