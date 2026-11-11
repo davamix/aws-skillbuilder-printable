@@ -45,9 +45,10 @@ Known quirks (already handled):
   ("That's correct! Paragraph text = 17pt…") → ignored. Multi-select: per-option feedback empty, explanation in `rightFeedback`.
 - Paragraphs glued together in source ("launch.Which") → `unglue()` for questions/feedback.
 - Carousel slide titles can be empty (the benefit names only exist in the video) → numbered list.
-- Player navigation text ("Choose the **Return to outline** link…") → paragraph dropped via `NAV_PATTERNS` in
-  `src/convert.js`; the coverage check ignores the same patterns. Add new navigation phrases there (user's choice:
-  drop navigation text, keep everything else — e.g. "Congratulations on completing this module!" stays).
+- Player navigation text ("Choose the **Return to outline** link…") and the "Congratulations on completing this
+  module!" line → paragraphs dropped via `NAV_PATTERNS` in `src/convert.js`; the coverage check ignores the same
+  patterns. Add new navigation/filler phrases there (user's choice; the copyright line stays).
+- A nearly empty page after a section's last question is expected and fine (user-approved).
 
 ## Layout decisions (user-approved)
 

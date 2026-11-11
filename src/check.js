@@ -23,7 +23,7 @@ const key = (s) => s.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '');
 function coverage(readerText, markdown) {
   const plain = markdown.replace(/\]\([^)]*\)/g, ']').replace(/<br>/g, ' ');
   const hay = key(plain);
-  const lines = readerText.split('\n').map((l) => l.trim()).filter(Boolean)
+  const lines = readerText.split('\n').map((l) => l.replace(/ /g, ' ').trim()).filter(Boolean)
     .filter((l) => !IGNORE.some((re) => re.test(l)));
   const checked = lines.filter((l) => key(l).length >= 6);
   const missing = checked.filter((l) => !hay.includes(key(l)));

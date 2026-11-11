@@ -8,10 +8,12 @@ const { strikethrough } = require('turndown-plugin-gfm');
 
 const SKIPPED = new Set(['Video', 'Image', 'Audio']); // printable = text only
 
-// Player navigation instructions that mean nothing on paper. Paragraphs matching
-// these are dropped (and ignored by the coverage check in src/check.js).
+// Player navigation instructions and end-of-module filler that mean nothing on
+// paper. Paragraphs matching these are dropped (and ignored by the coverage
+// check in src/check.js).
 const NAV_PATTERNS = [
   /\breturn to outline\b/i, // "Choose the Return to outline link at the top of this page to continue…"
+  /^\s*congratulations on completing this module!?\s*$/i,
 ];
 const isNavigation = (text) => NAV_PATTERNS.some((re) => re.test(text.replace(/[*_]/g, '')));
 const dropNavigation = (md) => md.split(/\n{2,}/).filter((p) => !isNavigation(p)).join('\n\n');
