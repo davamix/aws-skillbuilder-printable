@@ -21,15 +21,53 @@ npx playwright install chromium   # used to render the PDF
 ## Usage
 
 ```sh
-npm run login     # 1. sign in by hand in the browser window, then click "Save session"
-npm run verify    # 2. check the saved session still works
-npm run outline   # 3. list the course modules
-npm run extract -- 1   # 4. extract module 1 (repeat for each module)
-npm run build     # 5. write output/<Course>/Markdown/*.md and PDF/*.pdf
+npm run login            # 1. sign in by hand in the browser window, then click "Save session"
+npm run verify           # 2. check the saved session still works
+npm run outline          # 3. list the course modules and their status (-- --verbose for lessons)
+npm run extract -- 1     # 4. extract module 1  (also: -- 2,4  |  -- 2-5  |  -- all)
+npm run build            # 5. write the Markdown + PDF from every extracted module
+```
+
+Output (one file per format, modules in course order):
+
+```
+output/<Course name>/Markdown/<Course name>.md
+output/<Course name>/PDF/<Course name>.pdf
 ```
 
 Courses are configured in [`courses/`](courses/) (name + outline URL). With a
-single course file the slug can be omitted.
+single course file the `--course <slug>` option can be omitted.
+
+## How it works
+
+- **Navigation** — the outline page lists modules (`data-testid="stepLabel"`);
+  each module's Start / Resume / Review button opens the player
+  (`/renderer/?module_id=…`), whose iframe loads the whole module as
+  `cds/CONTENT_<id>/course.json`. That JSON is the content source: it is
+  structured (sections → lessons → topics → typed blocks) and includes the
+  knowledge-check answers.
+- **Conversion** ([`src/convert.js`](src/convert.js)) — text blocks, flip cards
+  (back side: title + description), hotspot images (marker titles + text),
+  carousels, columns, tables and questions become Markdown. Videos,
+  transcripts and images are dropped. Each module ends with an **answer key**
+  (correct option + explanations). Unknown block types are rendered with a
+  generic fallback and reported.
+- **Coverage check** ([`src/check.js`](src/check.js)) — the extractor also
+  saves the player's *reader mode* text (videos/transcripts removed);
+  `npm run build` verifies every line of it appears in the Markdown and lists
+  anything missing.
+- **PDF** ([`src/pdf.js`](src/pdf.js)) — black-on-white print CSS, A4, page
+  numbers, PDF bookmarks, each module on a new page, link URLs printed next to
+  the link text.
+
+Note: opening a module you have not started yet (the button says *Start*)
+registers it as started in your Skill Builder progress, exactly as clicking it
+yourself would.
+
+Intermediate files live in `build/<course>/` (git-ignored): `outline.json`
+and per module `NN.course.json`, `NN.reader.txt`, `NN.meta.json`, `NN.md`.
+`npm run build` works offline from these, so the converter can be improved
+and re-run without touching the site.
 
 Set `BROWSER_CHANNEL=chrome` to use Chrome instead of Edge, or `chromium` for
 Playwright's bundled browser.

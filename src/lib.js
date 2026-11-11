@@ -47,6 +47,27 @@ async function sessionContext(browser, extra = {}) {
   });
 }
 
+/**
+ * Persist refreshed tokens (the site renews them while we browse) so the
+ * session lasts longer. Only when the page is still signed in, so a
+ * logged-out state never overwrites a good one.
+ */
+async function saveSession(context, page) {
+  if (!page || isAuthUrl(page.url())) return false;
+  await context.storageState({ path: AUTH_FILE, indexedDB: true });
+  return true;
+}
+
+/** Folder for a course's intermediate files (git-ignored). */
+function courseBuildDir(course) {
+  return ensureDir(path.join(BUILD_DIR, course.slug));
+}
+
+/** Course name safe for use as a folder/file name on Windows/macOS/Linux. */
+function safeName(name) {
+  return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').replace(/\s+/g, ' ').trim();
+}
+
 /** True when the browser was bounced to a sign-in page. */
 function isAuthUrl(url) {
   const u = new URL(url);
@@ -87,5 +108,5 @@ async function dumpPage(target, name, { screenshot = true } = {}) {
 
 module.exports = {
   ROOT, AUTH_DIR, AUTH_FILE, AUTH_META, DEBUG_DIR, BUILD_DIR, OUTPUT_DIR, COURSES_DIR, CHANNEL,
-  loadCourse, launch, sessionContext, isAuthUrl, ensureDir, dumpPage,
+  loadCourse, launch, sessionContext, saveSession, courseBuildDir, safeName, isAuthUrl, ensureDir, dumpPage,
 };
