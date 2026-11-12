@@ -34,7 +34,7 @@ const MAX_LINES_PER_MODULE = 12; // console cap; report.txt has everything
   for (const f of files) {
     const nn = f.slice(0, 2);
     const json = JSON.parse(fs.readFileSync(path.join(modDir, f), 'utf8'));
-    const { markdown, warnings, stats } = convertModule(json, { level: 2 });
+    const { markdown, warnings, stats, droppedText } = convertModule(json, { level: 2 });
     fs.writeFileSync(path.join(modDir, `${nn}.md`), markdown);
 
     const problems = [];
@@ -43,7 +43,8 @@ const MAX_LINES_PER_MODULE = 12; // console cap; report.txt has everything
     for (const [w, c] of Object.entries(counts)) problems.push(`${w}${c > 1 ? ` (×${c})` : ''}`);
     for (const l of lint(markdown)) problems.push(l);
     const readerFile = path.join(modDir, `${nn}.reader.txt`);
-    const cov = fs.existsSync(readerFile) ? coverage(fs.readFileSync(readerFile, 'utf8'), markdown) : null;
+    // Text of deliberately dropped lessons (e.g. "Contact Us") counts as accounted for.
+    const cov = fs.existsSync(readerFile) ? coverage(fs.readFileSync(readerFile, 'utf8'), `${markdown}\n${droppedText}`) : null;
     if (cov) for (const m of cov.missing) problems.push(`missing: ${m.slice(0, 140)}`);
 
     const covText = cov ? `coverage ${cov.checked - cov.missing.length}/${cov.checked}` : 'coverage n/a (no reader text)';

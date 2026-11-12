@@ -53,6 +53,9 @@ Known quirks (already handled):
   module!" line → paragraphs dropped via `NAV_PATTERNS` in `src/convert.js`; the coverage check ignores the same
   patterns. Add new navigation/filler phrases there (user's choice; the copyright line stays).
 - A nearly empty page after a section's last question is expected and fine (user-approved).
+- Whole non-content lessons are dropped via `DROP_LESSONS` in `src/convert.js` (currently "Contact Us": support-form
+  instructions + "Congratulations on completing this course!" at the end of the course). Their text is passed to the
+  coverage check as accounted for (`droppedText`), so it is not reported as missing.
 
 ## Layout decisions (user-approved)
 

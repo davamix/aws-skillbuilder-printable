@@ -16,8 +16,24 @@ const JUNK_ALT = /^(end of tab|end of section|decorative( image)?|image|spacer)\
 // check in src/check.js).
 const NAV_PATTERNS = [
   /\breturn to outline\b/i, // "Choose the Return to outline link at the top of this page to continue…"
-  /^\s*congratulations on completing this module!?\s*$/i,
+  /^\s*congratulations on completing this (module|course)!?\s*$/i,
 ];
+
+// Whole lessons that are not course content (dropped; their text still counts for the coverage check).
+const DROP_LESSONS = [
+  /^contact us$/i, // feedback / support form instructions at the end of the course
+];
+
+/** Plain text of every string in a JSON subtree (for coverage accounting of dropped lessons). */
+function plainText(o) {
+  const parts = [];
+  (function walk(v) {
+    if (typeof v === 'string') parts.push(v.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  })(o);
+  return parts.join('\n');
+}
 const isNavigation = (text) => NAV_PATTERNS.some((re) => re.test(text.replace(/[*_]/g, '')));
 const dropNavigation = (md) => md.split(/\n{2,}/).filter((p) => !isNavigation(p)).join('\n\n');
 
@@ -157,6 +173,7 @@ function convertModule(course, { level = 1 } = {}) {
   const answers = [];
   const warnings = [];
   const stats = {};
+  const dropped = [];
 
   // The image itself is dropped; a descriptive alt text is kept as one italic line.
   const imageAlt = (img) => {
@@ -249,6 +266,10 @@ function convertModule(course, { level = 1 } = {}) {
   for (const section of course.sections || []) {
     out.push(`${H(level + 1)} ${clean(section.title)}`);
     for (const lesson of section.lessons || []) {
+      if (DROP_LESSONS.some((re) => re.test(clean(lesson.title)))) {
+        dropped.push(plainText(lesson));
+        continue;
+      }
       out.push(`${H(level + 2)} ${clean(lesson.title)}`);
       for (const topic of lesson.topics || []) {
         const sameAsLesson = clean(topic.title).toLowerCase() === clean(lesson.title).toLowerCase();
@@ -285,7 +306,7 @@ function convertModule(course, { level = 1 } = {}) {
     }
   }
 
-  return { markdown: tidyMd(out.join('\n\n')) + '\n', warnings, stats };
+  return { markdown: tidyMd(out.join('\n\n')) + '\n', warnings, stats, droppedText: dropped.join('\n') };
 }
 
 module.exports = { convertModule, NAV_PATTERNS, JUNK_ALT };
